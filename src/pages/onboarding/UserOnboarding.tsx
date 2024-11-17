@@ -1,831 +1,327 @@
-import React, { useState, useEffect } from "react";
+// src/pages/onboarding/UserOnboarding.tsx
+
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import {
+  UserIcon,
+  BriefcaseIcon,
+  HeartIcon,
+  AcademicCapIcon,
+  CheckIcon,
+} from "@heroicons/react/24/outline";
 
-// Types
-interface WorkArrangement {
-  id: string;
-  label: string;
-  description: string;
-  needsDetails: boolean;
-}
+import {
+  PersonalInfoStep,
+  RQTHInfoStep,
+  WorkPreferencesStep,
+  ProfessionalProfileStep,
+} from "@/components/steps";
 
-interface ITDomain {
-  id: string;
-  name: string;
-  subDomains: {
-    id: string;
-    name: string;
-    skills: string[];
-  }[];
-}
+import { RQTHProfileData } from "@/types/rqth";
+import Alert from "@/components/common/Alert";
 
-interface ProfileData {
-  // Informations personnelles
-  firstName: string;
-  lastName: string;
-  phone: string;
-  city: string;
-
-  // Domaines IT et compétences
-  selectedDomain: string;
-  selectedSubDomains: string[];
-  skills: Record<string, string[]>;
-
-  // RQTH et adaptations
-  visualAdaptations: string[];
-  visualAdaptationsDetails?: string;
-  auditoryAdaptations: string[];
-  auditoryAdaptationsDetails?: string;
-  motorAdaptations: string[];
-  motorAdaptationsDetails?: string;
-  cognitiveAdaptations: string[];
-  cognitiveAdaptationsDetails?: string;
-
-  // Conditions environnementales
-  environmentalNeeds: {
-    lighting?: string;
-    noise?: string;
-    temperature?: string;
-  };
-
-  // Organisation du travail
-  workSchedule: {
-    preferredDays?: string[];
-    preferredHours?: {
-      start: string;
-      end: string;
-    };
-    breakRequirements?: string;
-    maxHoursPerDay?: number;
-    medicalConstraints?: string[];
-  };
-
-  // Communication et support
-  communicationPreferences: string[];
-  supportNeeds: string[];
-
-  // Urgence
-  emergencyContact: {
-    name: string;
-    phone: string;
-  };
-  emergencyProcedures: string[];
-  emergencyInstructions?: string;
-
-  // Transport et accessibilité
-  transportation: {
-    mode: string;
-    details?: string;
-  };
-  accessibilityNeeds: string[];
-  accessibilityDetails?: string;
-
-  // Formation
-  trainingNeeds: string[];
-  careerGoals?: string;
-}
-
-// Configuration statique des domaines IT (comme défini précédemment)
-const IT_DOMAINS: ITDomain[] = [
+const STEPS = [
   {
-    id: "infrastructure",
-    name: "Infrastructure & Systèmes",
-    subDomains: [
-      {
-        id: "system-admin",
-        name: "Administration Systèmes",
-        skills: [
-          "Windows Server",
-          "Linux (RHEL/Debian)",
-          "Active Directory",
-          "VMware",
-          "Hyper-V",
-          "PowerShell",
-          "Bash",
-          "Ansible",
-          "Monitoring (Nagios/Zabbix)",
-          "Sauvegarde & Restauration",
-        ],
-      },
-      {
-        id: "network",
-        name: "Réseaux",
-        skills: [
-          "TCP/IP",
-          "Routage & Switching",
-          "Firewalls",
-          "VPN",
-          "Load Balancing",
-          "DNS/DHCP",
-          "WiFi",
-          "SDN",
-          "QoS",
-          "Protocoles réseau avancés",
-        ],
-      },
-      {
-        id: "cloud",
-        name: "Cloud Computing",
-        skills: [
-          "AWS",
-          "Azure",
-          "GCP",
-          "OpenStack",
-          "Kubernetes",
-          "Docker",
-          "Terraform",
-          "CloudFormation",
-        ],
-      },
-    ],
+    id: 1,
+    label: "Informations personnelles",
+    icon: UserIcon,
+    component: PersonalInfoStep,
   },
-  // ... autres domaines IT comme définis précédemment
+  {
+    id: 2,
+    label: "Situation RQTH",
+    icon: HeartIcon,
+    component: RQTHInfoStep,
+  },
+  {
+    id: 3,
+    label: "Préférences de travail",
+    icon: BriefcaseIcon,
+    component: WorkPreferencesStep,
+  },
+  {
+    id: 4,
+    label: "Profil professionnel",
+    icon: AcademicCapIcon,
+    component: ProfessionalProfileStep,
+  },
 ];
 
-const WORK_ARRANGEMENTS: WorkArrangement[] = [
-  {
-    id: "flexible-hours",
-    label: "Horaires flexibles",
-    description: "Adaptation des horaires selon les besoins médicaux",
-    needsDetails: true,
-  },
-  // ... autres arrangements comme définis précédemment
-];
-
-const ProfileSetup = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [formData, setFormData] = useState<ProfileData>({
-    // Initialisation de tous les champs
+const initialFormData: RQTHProfileData = {
+  personalInfo: {
     firstName: "",
     lastName: "",
+    email: "",
     phone: "",
     city: "",
-    selectedDomain: "",
-    selectedSubDomains: [],
-    skills: {},
-    visualAdaptations: [],
-    auditoryAdaptations: [],
-    motorAdaptations: [],
-    cognitiveAdaptations: [],
-    environmentalNeeds: {},
-    workSchedule: {},
-    communicationPreferences: [],
-    supportNeeds: [],
-    emergencyContact: {
-      name: "",
-      phone: "",
+    birthDate: "",
+    address: "",
+    postalCode: "",
+  },
+  healthInfo: {
+    disabilityType: [],
+    evolution: "stable",
+    contraindications: [],
+    treatments: {
+      current: [],
+      frequency: "",
+      constraints: [],
     },
-    emergencyProcedures: [],
-    transportation: {
-      mode: "",
+    dailyNeeds: [],
+    medicalFollowUp: {
+      frequency: "",
+      specialists: [],
+      hospitalProximity: false,
+      regularCare: [],
+      emergencyProtocol: "",
     },
-    accessibilityNeeds: [],
-    trainingNeeds: [],
-  });
+  },
+  schedule: {
+    workHours: {
+      preferred: {
+        start: "",
+        end: "",
+      },
+      maxPerDay: 8,
+      flexibilityNeeds: [],
+    },
+    breaks: {
+      frequency: "",
+      duration: "",
+      specific: [],
+    },
+    adaptation: {
+      remote: false,
+      hybrid: false,
+      specialArrangements: [],
+    },
+  },
+  professional: {
+    skills: [],
+    experience: {
+      roles: [],
+    },
+    education: {
+      degree: "",
+      school: "",
+      year: "",
+    },
+  },
+};
 
-  useEffect(() => {
-    const loadExistingData = async () => {
-      try {
-        setLoading(true);
-        // TODO: Charger les données existantes depuis l'API
-        const savedData = await fetchUserProfile(user.id);
-        if (savedData) {
-          setFormData(savedData);
+const UserOnboarding: React.FC = () => {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<RQTHProfileData>(initialFormData);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        if (!formData.personalInfo.firstName.trim()) {
+          setError("Le prénom est requis");
+          return false;
         }
-      } catch (err) {
-        setError("Erreur lors du chargement des données");
-      } finally {
-        setLoading(false);
-      }
-    };
+        if (!formData.personalInfo.lastName.trim()) {
+          setError("Le nom est requis");
+          return false;
+        }
+        if (!formData.personalInfo.email.trim()) {
+          setError("L'email est requis");
+          return false;
+        }
+        break;
 
-    loadExistingData();
-  }, [user.id]);
+      case 2:
+        if (formData.healthInfo.disabilityType.length === 0) {
+          setError("Veuillez sélectionner au moins un type de handicap");
+          return false;
+        }
+        break;
 
-  useEffect(() => {
-    if (!hasChanges) return;
+      case 3:
+        if (
+          !formData.schedule.workHours.preferred.start ||
+          !formData.schedule.workHours.preferred.end
+        ) {
+          setError("Les horaires de travail sont requis");
+          return false;
+        }
+        break;
 
-    const timer = setTimeout(() => {
-      handleAutoSave();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [formData, hasChanges]);
-
-  const handleAutoSave = async () => {
-    try {
-      setLoading(true);
-      // TODO: Implémenter la sauvegarde API
-      await saveUserProfile(user.id, formData);
-      setHasChanges(false);
-    } catch (err) {
-      setError("Erreur lors de la sauvegarde automatique");
-    } finally {
-      setLoading(false);
+      case 4:
+        if (formData.professional.skills.length === 0) {
+          setError("Veuillez ajouter au moins une compétence");
+          return false;
+        }
+        break;
     }
-  };
-
-  const handleFieldChange = (field: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    setHasChanges(true);
+    setError(null);
+    return true;
   };
 
   const handleNext = () => {
-    setCurrentStep((prev) => prev + 1);
+    if (validateStep(currentStep)) {
+      if (currentStep < STEPS.length) {
+        setCurrentStep((prev) => prev + 1);
+      }
+    }
   };
 
   const handlePrevious = () => {
-    setCurrentStep((prev) => prev - 1);
+    setCurrentStep((prev) => Math.max(1, prev - 1));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateStep(currentStep)) return;
+
     try {
       setLoading(true);
-      // TODO: Validation finale et soumission
-      await submitProfile(user.id, formData);
-      navigate("/dashboard");
+      // TODO: Implémenter la sauvegarde API
+      // await saveProfile(formData);
+      setSuccess("Profil créé avec succès !");
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1500);
     } catch (err) {
-      setError("Erreur lors de la soumission du profil");
+      setError("Une erreur est survenue lors de la sauvegarde");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fonctions de rendu pour chaque section
-  const renderPersonalInfo = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold mb-6">Informations personnelles</h2>
+  const handleStepChange = (
+    section: keyof RQTHProfileData,
+    field: string,
+    value: any
+  ) => {
+    if (field.includes(".")) {
+      const [parent, child] = field.split(".");
+      setFormData((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [parent]: {
+            ...(prev[section] as any)[parent],
+            [child]: value,
+          },
+        },
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [field]: value,
+        },
+      }));
+    }
+  };
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Prénom
-          </label>
-          <input
-            type="text"
-            value={formData.firstName}
-            onChange={(e) => handleFieldChange("firstName", e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Nom</label>
-          <input
-            type="text"
-            value={formData.lastName}
-            onChange={(e) => handleFieldChange("lastName", e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            required
-          />
-        </div>
-      </div>
+  const getCurrentComponent = () => {
+    const step = STEPS[currentStep - 1];
+    if (!step) return null;
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Téléphone
-        </label>
-        <input
-          type="tel"
-          value={formData.phone}
-          onChange={(e) => handleFieldChange("phone", e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-        />
-      </div>
+    const StepComponent = step.component;
+    const sectionKey = {
+      1: "personalInfo",
+      2: "healthInfo",
+      3: "schedule",
+      4: "professional",
+    }[currentStep] as keyof RQTHProfileData;
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Ville</label>
-        <input
-          type="text"
-          value={formData.city}
-          onChange={(e) => handleFieldChange("city", e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-        />
-      </div>
-    </div>
-  );
-
-  const renderITDomainSelection = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold mb-6">Domaine IT et compétences</h2>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Domaine IT principal
-        </label>
-        <select
-          value={formData.selectedDomain}
-          onChange={(e) => {
-            handleFieldChange("selectedDomain", e.target.value);
-            handleFieldChange("selectedSubDomains", []);
-            handleFieldChange("skills", {});
-          }}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-        >
-          <option value="">Sélectionnez un domaine</option>
-          {IT_DOMAINS.map((domain) => (
-            <option key={domain.id} value={domain.id}>
-              {domain.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {formData.selectedDomain && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Spécialisations
-          </label>
-          <div className="mt-2 space-y-2">
-            {IT_DOMAINS.find(
-              (d) => d.id === formData.selectedDomain
-            )?.subDomains.map((subDomain) => (
-              <div key={subDomain.id} className="flex items-center">
-                <input
-                  type="checkbox"
-                  id={subDomain.id}
-                  checked={formData.selectedSubDomains?.includes(subDomain.id)}
-                  onChange={(e) => {
-                    const newSubDomains = e.target.checked
-                      ? [...(formData.selectedSubDomains || []), subDomain.id]
-                      : formData.selectedSubDomains?.filter(
-                          (id) => id !== subDomain.id
-                        );
-                    handleFieldChange("selectedSubDomains", newSubDomains);
-                  }}
-                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                />
-                <label
-                  htmlFor={subDomain.id}
-                  className="ml-2 text-sm text-gray-700"
-                >
-                  {subDomain.name}
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {formData.selectedSubDomains?.length > 0 && (
-        <div className="space-y-4">
-          {formData.selectedSubDomains.map((subDomainId) => {
-            const domain = IT_DOMAINS.find(
-              (d) => d.id === formData.selectedDomain
-            );
-            const subDomain = domain?.subDomains.find(
-              (sd) => sd.id === subDomainId
-            );
-
-            return (
-              <div key={subDomainId}>
-                <label className="block text-sm font-medium text-gray-700">
-                  Compétences en {subDomain?.name}
-                </label>
-                <select
-                  multiple
-                  value={formData.skills?.[subDomainId] || []}
-                  onChange={(e) => {
-                    const values = Array.from(
-                      e.target.selectedOptions,
-                      (option) => option.value
-                    );
-                    handleFieldChange("skills", {
-                      ...formData.skills,
-                      [subDomainId]: values,
-                    });
-                  }}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                >
-                  {subDomain?.skills.map((skill) => (
-                    <option key={skill} value={skill}>
-                      {skill}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-
-  // Render function for all adaptations
-  const renderAdaptations = () => (
-    <div className="space-y-8">
-      <h2 className="text-2xl font-bold mb-6">Adaptations spécifiques</h2>
-
-      {/* Visual adaptations */}
-      {/* ... (tous les blocs d'adaptation comme définis précédemment) ... */}
-
-      {/* Environmental conditions */}
-      {/* ... (toutes les conditions environnementales comme définies précédemment) ... */}
-
-      {/* Communication and support */}
-      {/* ... (toute la section communication comme définie précédemment) ... */}
-
-      {/* Emergency protocol */}
-      {/* ... (tout le protocole d'urgence comme défini précédemment) ... */}
-
-      {/* Transport and accessibility */}
-      {/* ... (toute la section transport comme définie précédemment) ... */}
-
-      {/* Training and professional development */}
-      {/* ... (toute la section formation comme définie précédemment) ... */}
-    </div>
-  );
-
-  // Main render
-  if (loading && !formData) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-      </div>
+      <StepComponent
+        data={formData[sectionKey]}
+        onChange={(field: string, value: any) =>
+          handleStepChange(sectionKey, field, value)
+        }
+        errors={{}}
+      />
     );
-  }
-
-  const steps = [
-    "Informations personnelles",
-    "Domaine IT",
-    "Adaptations",
-    "Organisation",
-    "Préférences",
-  ];
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
-      <div className="container mx-auto px-4">
-        <div className="max-w-3xl mx-auto">
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+      <div className="max-w-3xl mx-auto">
+        {(error || success) && (
+          <Alert
+            type={error ? "error" : "success"}
+            message={error || success}
+            onClose={() => (error ? setError(null) : setSuccess(null))}
+          />
+        )}
 
-          {/* Status indicator */}
-          <div className="mb-4 flex items-center justify-end text-sm text-gray-500">
-            {loading ? (
-              <div className="flex items-center">
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Sauvegarde en cours...
-              </div>
-            ) : hasChanges ? (
-              <div className="flex items-center">
-                <Save className="w-4 h-4 mr-2" />
-                Modifications non sauvegardées
-              </div>
-            ) : (
-              <div className="flex items-center text-green-600">
-                Tout est sauvegardé
-              </div>
-            )}
-          </div>
+        <div className="bg-white rounded-lg shadow p-8">
+          <h1 className="text-2xl font-bold mb-8 text-center">
+            Complétez votre profil
+          </h1>
 
-          {/* Progress bar */}
-          <div className="mb-8">
-            <div className="flex justify-between mb-2">
-              {steps.map((step, index) => (
+          {/* Indicateur d'étapes */}
+          <div className="flex justify-between mb-8">
+            {STEPS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => validateStep(currentStep) && setCurrentStep(id)}
+                className={`flex flex-col items-center space-y-2 ${
+                  currentStep >= id ? "text-primary-600" : "text-gray-400"
+                }`}
+              >
                 <div
-                  key={step}
-                  className={`text-sm font-medium ${
-                    currentStep > index + 1
-                      ? "text-primary-600"
-                      : "text-gray-500"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    currentStep >= id
+                      ? "bg-primary-600 text-white"
+                      : "bg-gray-200"
                   }`}
                 >
-                  {step}
+                  {currentStep > id ? (
+                    <CheckIcon className="w-6 h-6" />
+                  ) : (
+                    <Icon className="w-6 h-6" />
+                  )}
                 </div>
-              ))}
-            </div>
-            <div className="h-2 bg-gray-200 rounded-full">
-              <div
-                className="h-2 bg-primary-600 rounded-full transition-all"
-                style={{ width: `${(currentStep / steps.length) * 100}%` }}
-              />
-            </div>
+                <span className="text-sm font-medium">{label}</span>
+              </button>
+            ))}
           </div>
 
-          {/* Form */}
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Step rendering */}
-              {currentStep === 1 && renderPersonalInfo()}
-              {currentStep === 2 && renderITDomainSelection()}
-              {currentStep === 3 && (
-                <div className="space-y-6">
-                  <h2 className="text-2xl font-bold mb-6">
-                    Adaptations spécifiques
-                  </h2>
+          {/* Formulaire */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {getCurrentComponent()}
 
-                  {/* Visual adaptations */}
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="text-md font-medium">
-                      Adaptations visuelles
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        { id: "screen-reader", label: "Lecteur d'écran" },
-                        { id: "magnifier", label: "Logiciel d'agrandissement" },
-                        {
-                          id: "contrast",
-                          label: "Réglages de contraste spécifiques",
-                        },
-                        { id: "braille", label: "Afficheur braille" },
-                        { id: "voice-command", label: "Commandes vocales" },
-                        { id: "large-display", label: "Grand écran" },
-                      ].map((option) => (
-                        <div key={option.id} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={option.id}
-                            checked={formData.visualAdaptations?.includes(
-                              option.id
-                            )}
-                            onChange={(e) => {
-                              const adaptations =
-                                formData.visualAdaptations || [];
-                              const newAdaptations = e.target.checked
-                                ? [...adaptations, option.id]
-                                : adaptations.filter((a) => a !== option.id);
-                              handleFieldChange(
-                                "visualAdaptations",
-                                newAdaptations
-                              );
-                            }}
-                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          />
-                          <label
-                            htmlFor={option.id}
-                            className="ml-2 text-sm text-gray-700"
-                          >
-                            {option.label}
-                          </label>
-                        </div>
-                      ))}
-                      <textarea
-                        placeholder="Autres besoins visuels spécifiques..."
-                        value={formData.visualAdaptationsDetails || ""}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            "visualAdaptationsDetails",
-                            e.target.value
-                          )
-                        }
-                        className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Auditory adaptations */}
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="text-md font-medium">
-                      Adaptations auditives
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        {
-                          id: "hearing-aid",
-                          label: "Compatibilité appareil auditif",
-                        },
-                        { id: "visual-alerts", label: "Alertes visuelles" },
-                        {
-                          id: "transcription",
-                          label: "Transcription en temps réel",
-                        },
-                        {
-                          id: "sign-interpreter",
-                          label: "Interprète en langue des signes",
-                        },
-                        { id: "quiet-space", label: "Environnement calme" },
-                      ].map((option) => (
-                        <div key={option.id} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={option.id}
-                            checked={formData.auditoryAdaptations?.includes(
-                              option.id
-                            )}
-                            onChange={(e) => {
-                              const adaptations =
-                                formData.auditoryAdaptations || [];
-                              const newAdaptations = e.target.checked
-                                ? [...adaptations, option.id]
-                                : adaptations.filter((a) => a !== option.id);
-                              handleFieldChange(
-                                "auditoryAdaptations",
-                                newAdaptations
-                              );
-                            }}
-                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          />
-                          <label
-                            htmlFor={option.id}
-                            className="ml-2 text-sm text-gray-700"
-                          >
-                            {option.label}
-                          </label>
-                        </div>
-                      ))}
-                      <textarea
-                        placeholder="Autres besoins auditifs spécifiques..."
-                        value={formData.auditoryAdaptationsDetails || ""}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            "auditoryAdaptationsDetails",
-                            e.target.value
-                          )
-                        }
-                        className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Motor adaptations */}
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="text-md font-medium">
-                      Adaptations motrices
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        {
-                          id: "ergonomic-desk",
-                          label: "Bureau ergonomique ajustable",
-                        },
-                        { id: "adapted-chair", label: "Siège adapté" },
-                        { id: "adapted-keyboard", label: "Clavier adapté" },
-                        { id: "adapted-mouse", label: "Souris adaptée" },
-                        { id: "voice-control", label: "Contrôle vocal" },
-                        {
-                          id: "mobility-assistance",
-                          label: "Assistance à la mobilité",
-                        },
-                      ].map((option) => (
-                        <div key={option.id} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={option.id}
-                            checked={formData.motorAdaptations?.includes(
-                              option.id
-                            )}
-                            onChange={(e) => {
-                              const adaptations =
-                                formData.motorAdaptations || [];
-                              const newAdaptations = e.target.checked
-                                ? [...adaptations, option.id]
-                                : adaptations.filter((a) => a !== option.id);
-                              handleFieldChange(
-                                "motorAdaptations",
-                                newAdaptations
-                              );
-                            }}
-                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          />
-                          <label
-                            htmlFor={option.id}
-                            className="ml-2 text-sm text-gray-700"
-                          >
-                            {option.label}
-                          </label>
-                        </div>
-                      ))}
-                      <textarea
-                        placeholder="Autres besoins moteurs spécifiques..."
-                        value={formData.motorAdaptationsDetails || ""}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            "motorAdaptationsDetails",
-                            e.target.value
-                          )
-                        }
-                        className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Cognitive adaptations */}
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="text-md font-medium">
-                      Adaptations cognitives
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        {
-                          id: "task-organization",
-                          label: "Outils d'organisation des tâches",
-                        },
-                        {
-                          id: "time-management",
-                          label: "Aide à la gestion du temps",
-                        },
-                        {
-                          id: "written-instructions",
-                          label: "Instructions écrites détaillées",
-                        },
-                        {
-                          id: "noise-reduction",
-                          label: "Réduction des distractions sonores",
-                        },
-                        { id: "stress-management", label: "Gestion du stress" },
-                        {
-                          id: "regular-breaks",
-                          label: "Pauses régulières structurées",
-                        },
-                      ].map((option) => (
-                        <div key={option.id} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={option.id}
-                            checked={formData.cognitiveAdaptations?.includes(
-                              option.id
-                            )}
-                            onChange={(e) => {
-                              const adaptations =
-                                formData.cognitiveAdaptations || [];
-                              const newAdaptations = e.target.checked
-                                ? [...adaptations, option.id]
-                                : adaptations.filter((a) => a !== option.id);
-                              handleFieldChange(
-                                "cognitiveAdaptations",
-                                newAdaptations
-                              );
-                            }}
-                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          />
-                          <label
-                            htmlFor={option.id}
-                            className="ml-2 text-sm text-gray-700"
-                          >
-                            {option.label}
-                          </label>
-                        </div>
-                      ))}
-                      <textarea
-                        placeholder="Autres besoins cognitifs spécifiques..."
-                        value={formData.cognitiveAdaptationsDetails || ""}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            "cognitiveAdaptationsDetails",
-                            e.target.value
-                          )
-                        }
-                        className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-                </div>
+            <div className="flex justify-between mt-8">
+              {currentStep > 1 && (
+                <button
+                  type="button"
+                  onClick={handlePrevious}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Précédent
+                </button>
               )}
 
-              {/* Navigation buttons */}
-              <div className="flex justify-between mt-8">
-                {currentStep > 1 && (
-                  <button
-                    type="button"
-                    onClick={handlePrevious}
-                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    Précédent
-                  </button>
-                )}
-
-                {currentStep < steps.length ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="ml-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
-                  >
-                    Suivant
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className="ml-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
-                  >
-                    Terminer
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
+              <button
+                type={currentStep === STEPS.length ? "submit" : "button"}
+                onClick={currentStep === STEPS.length ? undefined : handleNext}
+                disabled={loading}
+                className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {loading
+                  ? "Chargement..."
+                  : currentStep === STEPS.length
+                    ? "Terminer"
+                    : "Suivant"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
   );
 };
 
-export default ProfileSetup;
+export default UserOnboarding;

@@ -1,92 +1,159 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/Button";
+import { Link } from "react-router-dom";
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  CodeBracketIcon,
+  ServerIcon,
+  ShieldCheckIcon,
+  CommandLineIcon,
+  UserGroupIcon,
+  LightBulbIcon,
+} from "@heroicons/react/24/outline";
 
-const Home = () => {
-  const navigate = useNavigate();
+interface FeatureCardProps {
+  Icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+}
 
+interface TechRoleCardProps {
+  role: string;
+  stack: string[];
+  adaptations: string;
+}
+
+const FeatureCard: React.FC<FeatureCardProps> = ({
+  Icon,
+  title,
+  description,
+}) => (
+  <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-lg transition-shadow">
+    <Icon className="w-6 h-6 text-primary-600 mb-4" />
+    <h3 className="font-semibold text-lg mb-2">{title}</h3>
+    <p className="text-gray-600">{description}</p>
+  </div>
+);
+
+const TechRoleCard: React.FC<TechRoleCardProps> = ({
+  role,
+  stack,
+  adaptations,
+}) => (
+  <div className="bg-white p-6 rounded-lg shadow-sm border hover:border-primary-500 transition-all">
+    <h3 className="font-semibold text-lg mb-3">{role}</h3>
+    <div className="flex flex-wrap gap-2 mb-4">
+      {stack.map((tech, i) => (
+        <span
+          key={i}
+          className="bg-primary-50 text-primary-700 px-2 py-1 rounded text-sm"
+        >
+          {tech}
+        </span>
+      ))}
+    </div>
+    <div className="text-sm text-primary-600 flex items-center">
+      <ShieldCheckIcon className="w-4 h-4 mr-2" />
+      <span>{adaptations}</span>
+    </div>
+  </div>
+);
+
+export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Trouvez votre emploi idéal en IT
-            </h1>
-            <p className="text-xl mb-8">
-              La première plateforme de matching dédiée aux travailleurs RQTH
-              dans l'informatique
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={() => navigate("/register")}
-              >
-                Je suis candidat
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => navigate("/register?type=employer")}
-              >
-                Je recrute
-              </Button>
+      <section className="bg-gradient-to-r from-primary-700 to-primary-900 text-white py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+                Développez votre carrière IT sans limites
+              </h1>
+              <p className="text-xl">
+                Premier matching intelligent qui comprend vraiment vos besoins
+                techniques et valorise vos compétences dans l'IT.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-white text-primary-700 rounded-lg font-medium hover:bg-primary-50 transition-colors"
+                >
+                  Je suis candidat
+                  <ChevronRightIcon className="ml-2 w-4 h-4" />
+                </Link>
+                <Link
+                  to="/recruiter"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-500 transition-colors border border-white/20"
+                >
+                  Je recrute des talents IT
+                  <ChevronRightIcon className="ml-2 w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+            <div className="hidden md:grid grid-cols-1 gap-4">
+              <TechRoleCard
+                role="Senior Frontend Developer"
+                stack={["React", "TypeScript", "Next.js"]}
+                adaptations="Poste 100% remote possible"
+              />
+              <TechRoleCard
+                role="DevOps Engineer"
+                stack={["Kubernetes", "AWS", "Terraform"]}
+                adaptations="Horaires flexibles disponibles"
+              />
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
+      <section className="py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-12 text-center">
+            Une approche tech-first
+          </h2>
           <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard
-              icon="🎯"
+              Icon={LightBulbIcon}
               title="Matching Intelligent"
-              description="Algorithme spécialisé prenant en compte vos besoins spécifiques"
+              description="Algorithme qui comprend vraiment vos compétences techniques et vos contraintes spécifiques."
             />
             <FeatureCard
-              icon="🤝"
-              title="Accompagnement Personnalisé"
-              description="Suivi adapté et conseils pour votre recherche d'emploi"
+              Icon={ShieldCheckIcon}
+              title="Données Sécurisées"
+              description="Chiffrement de bout en bout de vos données sensibles."
             />
             <FeatureCard
-              icon="📈"
-              title="Opportunités Ciblées"
-              description="Entreprises sensibilisées et postes adaptés à vos compétences"
+              Icon={UserGroupIcon}
+              title="Focus Tech"
+              description="Une plateforme par des RQTH, pour des RQTH."
             />
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="bg-gray-50 py-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Comment ça marche ?
+      {/* Tech Specialties Section */}
+      <section className="bg-gray-50 py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-12 text-center">
+            Spécialités Tech
           </h2>
-          <div className="grid md:grid-cols-4 gap-8">
-            <StepCard
-              number="1"
-              title="Inscription"
-              description="Créez votre profil en quelques minutes"
+          <div className="grid md:grid-cols-3 gap-8">
+            <FeatureCard
+              Icon={CodeBracketIcon}
+              title="Développement"
+              description="Frontend, Backend, Mobile & Cross-platform"
             />
-            <StepCard
-              number="2"
-              title="Préférences"
-              description="Précisez vos besoins et aspirations"
+            <FeatureCard
+              Icon={CommandLineIcon}
+              title="DevOps"
+              description="Cloud, CI/CD, Infrastructure & SRE"
             />
-            <StepCard
-              number="3"
-              title="Matching"
-              description="Recevez des opportunités pertinentes"
-            />
-            <StepCard
-              number="4"
-              title="Connexion"
-              description="Échangez directement avec les recruteurs"
+            <FeatureCard
+              Icon={ServerIcon}
+              title="Data & IA"
+              description="Data Engineering, Science & ML/AI"
             />
           </div>
         </div>
@@ -94,56 +161,30 @@ const Home = () => {
 
       {/* CTA Section */}
       <section className="py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-8">
-            Prêt à commencer votre nouvelle aventure ?
+        <div className="max-w-4xl mx-auto text-center px-4">
+          <h2 className="text-3xl font-bold mb-6">
+            Prêt à booster votre carrière tech ?
           </h2>
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={() => navigate("/register")}
-          >
-            Créer mon compte gratuitement
-          </Button>
+          <p className="text-xl text-gray-600 mb-8">
+            Rejoignez la première plateforme qui comprend réellement vos
+            besoins.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Link
+              to="/register"
+              className="px-8 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Créer mon profil
+            </Link>
+            <Link
+              to="/about"
+              className="px-8 py-3 bg-white text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+            >
+              En savoir plus
+            </Link>
+          </div>
         </div>
       </section>
     </div>
   );
-};
-
-// Components
-interface FeatureCardProps {
-  icon: string;
-  title: string;
-  description: string;
 }
-
-const FeatureCard: React.FC<FeatureCardProps> = ({
-  icon,
-  title,
-  description,
-}) => (
-  <div className="p-6 bg-white rounded-lg shadow-md text-center">
-    <div className="text-4xl mb-4">{icon}</div>
-    <h3 className="text-xl font-bold mb-2">{title}</h3>
-    <p className="text-gray-600">{description}</p>
-  </div>
-);
-
-interface StepCardProps {
-  number: string;
-  title: string;
-  description: string;
-}
-
-const StepCard: React.FC<StepCardProps> = ({ number, title, description }) => (
-  <div className="flex flex-col items-center text-center">
-    <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xl mb-4">
-      {number}
-    </div>
-    <h3 className="text-xl font-bold mb-2">{title}</h3>
-    <p className="text-gray-600">{description}</p>
-  </div>
-);
-
-export default Home;

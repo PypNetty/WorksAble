@@ -1,37 +1,156 @@
-import React from "react";
-import { useAuth } from "@/hooks/useAuth";
+// src/pages/dashboard/CandidateDashboard.tsx
 
-const CandidateDashboard = () => {
-  const { user } = useAuth();
+import React, { useState } from "react";
+import {
+  PersonalInfoStep,
+  RQTHInfoStep,
+  WorkPreferencesStep,
+  ProfessionalProfileStep,
+} from "@/components/steps";
+import { RQTHProfileData } from "@/types/rqth";
+
+const initialProfileData: RQTHProfileData = {
+  personalInfo: {
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    city: "",
+    birthDate: "",
+    address: "",
+    postalCode: "",
+  },
+  healthInfo: {
+    disabilityType: [],
+    evolution: "stable",
+    contraindications: [],
+    treatments: {
+      current: [],
+      frequency: "",
+      constraints: [],
+    },
+    dailyNeeds: [],
+    medicalFollowUp: {
+      frequency: "",
+      specialists: [],
+      hospitalProximity: false,
+      regularCare: [],
+      emergencyProtocol: "",
+    },
+  },
+  schedule: {
+    workHours: {
+      preferred: {
+        start: "",
+        end: "",
+      },
+      maxPerDay: 8,
+      flexibilityNeeds: [],
+    },
+    breaks: {
+      frequency: "",
+      duration: "",
+      specific: [],
+    },
+    adaptation: {
+      remote: false,
+      hybrid: false,
+      specialArrangements: [],
+    },
+  },
+  professional: {
+    skills: [],
+    experience: {
+      roles: [],
+    },
+    education: {
+      degree: "",
+      school: "",
+      year: "",
+    },
+  },
+};
+
+const CandidateDashboard: React.FC = () => {
+  const [profileData, setProfileData] =
+    useState<RQTHProfileData>(initialProfileData);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+
+  const handleProfileUpdate = (
+    section: keyof RQTHProfileData,
+    field: string,
+    value: any
+  ) => {
+    if (field.includes(".")) {
+      const [parent, child] = field.split(".");
+      setProfileData((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [parent]: {
+            ...(prev[section] as any)[parent],
+            [child]: value,
+          },
+        },
+      }));
+    } else {
+      setProfileData((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [field]: value,
+        },
+      }));
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-        <h1 className="text-2xl font-bold mb-2">Bienvenue, {user?.name} !</h1>
-        <p className="text-gray-600">Dashboard Candidat</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold mb-8">Mon Profil RQTH</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="text-3xl font-bold text-primary-600 mb-2">5</div>
-          <div className="text-gray-600">Offres consultées</div>
+        {/* Section Informations personnelles */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <PersonalInfoStep
+            data={profileData.personalInfo}
+            onChange={(field, value) =>
+              handleProfileUpdate("personalInfo", field, value)
+            }
+            errors={errors.personalInfo || {}}
+          />
         </div>
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="text-3xl font-bold text-primary-600 mb-2">2</div>
-          <div className="text-gray-600">Candidatures envoyées</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="text-3xl font-bold text-primary-600 mb-2">1</div>
-          <div className="text-gray-600">Entretien programmé</div>
-        </div>
-      </div>
 
-      {/* Matching suggestions */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-bold mb-4">Offres recommandées</h2>
-        <div className="space-y-4">
-          {/* ... contenu des offres ... */}
-          <p className="text-gray-600">Fonctionnalité à venir...</p>
+        {/* Section Situation RQTH */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <RQTHInfoStep
+            data={profileData.healthInfo}
+            onChange={(field, value) =>
+              handleProfileUpdate("healthInfo", field, value)
+            }
+            errors={errors.healthInfo || {}}
+          />
+        </div>
+
+        {/* Section Préférences de travail */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <WorkPreferencesStep
+            data={profileData.schedule}
+            onChange={(field, value) =>
+              handleProfileUpdate("schedule", field, value)
+            }
+            errors={errors.schedule || {}}
+          />
+        </div>
+
+        {/* Section Profil professionnel */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <ProfessionalProfileStep
+            data={profileData.professional}
+            onChange={(field, value) =>
+              handleProfileUpdate("professional", field, value)
+            }
+            errors={errors.professional || {}}
+          />
         </div>
       </div>
     </div>
