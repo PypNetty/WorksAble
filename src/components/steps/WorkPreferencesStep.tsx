@@ -1,38 +1,13 @@
-// src/components/steps/WorkPreferencesStep.tsx
-import React, { useEffect } from "react";
+import React, { useState } from "react";
 import {
+  BriefcaseIcon,
   ClockIcon,
   HomeIcon,
-  BriefcaseIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
-interface WorkHours {
-  start?: string;
-  end?: string;
-  maxPerDay?: number;
-  flexibilityNeeds?: string[];
-}
-
-interface WorkPreferences {
-  workHours: WorkHours;
-  breaks?: {
-    frequency?: string;
-    duration?: string;
-  };
-  remote?: boolean;
-  hybrid?: boolean;
-  specialNeeds?: string[];
-}
-
-const DEFAULT_WORK_HOURS: WorkHours = {
-  start: "",
-  end: "",
-  maxPerDay: 8,
-  flexibilityNeeds: [],
-};
-
 interface WorkPreferencesStepProps {
-  data: WorkPreferences;
+  data: any;
   onChange: (field: string, value: any) => void;
   errors?: Record<string, string>;
 }
@@ -42,44 +17,75 @@ const WorkPreferencesStep: React.FC<WorkPreferencesStepProps> = ({
   onChange,
   errors = {},
 }) => {
-  const workHours = {
-    ...DEFAULT_WORK_HOURS,
-    ...data.workHours,
-  };
+  const [newArrangement, setNewArrangement] = useState("");
+  const [newFlexibility, setNewFlexibility] = useState("");
 
-  useEffect(() => {
-    if (!data.workHours) {
-      onChange("workHours", DEFAULT_WORK_HOURS);
-    }
-  }, []);
-
-  const handleTimeChange = (field: keyof WorkHours, value: string) => {
-    const updatedWorkHours = {
-      ...workHours,
-      [field]: value,
+  const handleCheckboxChange =
+    (fieldName: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      onChange(fieldName, e.target.checked);
     };
-    onChange("workHours", updatedWorkHours);
+
+  const handleTimeChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      console.log("Current data:", data);
+      console.log("Field:", field);
+      console.log("New value:", e.target.value);
+      onChange(`workHours.preferred.${field}`, e.target.value);
+    };
+
+  const handleAddFlexibility = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && newFlexibility.trim()) {
+      const currentFlexibility = data.workHours?.flexibilityNeeds || [];
+      onChange("workHours.flexibilityNeeds", [
+        ...currentFlexibility,
+        newFlexibility.trim(),
+      ]);
+      setNewFlexibility("");
+    }
   };
 
-  const handleCheckboxChange = (
-    field: keyof WorkPreferences,
-    value: boolean
-  ) => {
-    onChange(field, value);
+  const handleAddArrangement = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && newArrangement.trim()) {
+      const currentArrangements = data.adaptation?.specialArrangements || [];
+      onChange("adaptation.specialArrangements", [
+        ...currentArrangements,
+        newArrangement.trim(),
+      ]);
+      setNewArrangement("");
+    }
+  };
+
+  const handleRemoveFlexibility = (indexToRemove: number) => {
+    const currentFlexibility = data.workHours?.flexibilityNeeds || [];
+    onChange(
+      "workHours.flexibilityNeeds",
+      currentFlexibility.filter(
+        (_: string, index: number) => index !== indexToRemove
+      )
+    );
+  };
+
+  const handleRemoveArrangement = (indexToRemove: number) => {
+    const currentArrangements = data.adaptation?.specialArrangements || [];
+    onChange(
+      "adaptation.specialArrangements",
+      currentArrangements.filter(
+        (_: string, index: number) => index !== indexToRemove
+      )
+    );
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-6">
-        <ClockIcon className="w-8 h-8 text-primary-600" />
+    <div className="space-y-8">
+      <div className="flex items-center gap-4">
+        <BriefcaseIcon className="w-8 h-8 text-blue-600" />
         <h2 className="text-2xl font-bold">Préférences de travail</h2>
       </div>
 
-      {/* Section Horaires */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <ClockIcon className="w-5 h-5 text-gray-500" />
-          Horaires
+          Horaires de travail
         </h3>
 
         <div className="grid grid-cols-2 gap-4">
@@ -89,9 +95,9 @@ const WorkPreferencesStep: React.FC<WorkPreferencesStepProps> = ({
             </label>
             <input
               type="time"
-              value={workHours.start}
-              onChange={(e) => handleTimeChange("start", e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              defaultValue="09:00"
+              onChange={handleTimeChange("start")}
+              className="mt-1 block w-full rounded-md border border-gray-200 p-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -101,91 +107,124 @@ const WorkPreferencesStep: React.FC<WorkPreferencesStepProps> = ({
             </label>
             <input
               type="time"
-              value={workHours.end}
-              onChange={(e) => handleTimeChange("end", e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              defaultValue="17:00"
+              onChange={handleTimeChange("end")}
+              className="mt-1 block w-full rounded-md border border-gray-200 p-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Nombre d'heures maximum par jour
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="12"
+            value={data.workHours?.maxPerDay ?? ""}
+            onChange={(e) => {
+              const value =
+                e.target.value === "" ? "" : parseInt(e.target.value);
+              onChange("workHours.maxPerDay", value);
+            }}
+            className="mt-1 block w-full rounded-md border border-gray-200 p-2 focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
             Besoins de flexibilité
           </label>
-          <textarea
-            value={workHours.flexibilityNeeds?.join("\n")}
-            onChange={(e) =>
-              handleTimeChange(
-                "flexibilityNeeds",
-                e.target.value.split("\n").filter(Boolean)
-              )
-            }
-            rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            placeholder="Un besoin par ligne..."
+          <input
+            type="text"
+            value={newFlexibility}
+            onChange={(e) => setNewFlexibility(e.target.value)}
+            onKeyDown={handleAddFlexibility}
+            placeholder="Appuyez sur Entrée pour ajouter"
+            className="mt-1 block w-full rounded-md border border-gray-200 p-2 focus:ring-blue-500 focus:border-blue-500"
           />
+          <div className="flex flex-wrap gap-2 mt-2">
+            {(data.workHours?.flexibilityNeeds || []).map(
+              (need: string, index: number) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                >
+                  {need}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFlexibility(index)}
+                    className="p-1 hover:bg-blue-200 rounded-full"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </span>
+              )
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Section Mode de travail */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <HomeIcon className="w-5 h-5 text-gray-500" />
           Mode de travail
         </h3>
 
-        <div className="space-y-3">
-          <div className="flex items-center">
+        <div className="flex flex-col gap-3">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              id="remote"
-              checked={data.remote}
-              onChange={(e) => handleCheckboxChange("remote", e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              checked={data.adaptation?.remote || false}
+              onChange={handleCheckboxChange("adaptation.remote")}
+              className="h-4 w-4 rounded border-gray-200 text-blue-600 focus:ring-blue-500"
             />
-            <label htmlFor="remote" className="ml-2 text-sm text-gray-700">
-              Télétravail possible
-            </label>
-          </div>
+            <span className="text-sm text-gray-700">Télétravail possible</span>
+          </label>
 
-          <div className="flex items-center">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              id="hybrid"
-              checked={data.hybrid}
-              onChange={(e) => handleCheckboxChange("hybrid", e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              checked={data.adaptation?.hybrid || false}
+              onChange={handleCheckboxChange("adaptation.hybrid")}
+              className="h-4 w-4 rounded border-gray-200 text-blue-600 focus:ring-blue-500"
             />
-            <label htmlFor="hybrid" className="ml-2 text-sm text-gray-700">
-              Mode hybride possible
-            </label>
-          </div>
+            <span className="text-sm text-gray-700">Mode hybride possible</span>
+          </label>
         </div>
-      </div>
-
-      {/* Section Besoins spéciaux */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium flex items-center gap-2">
-          <BriefcaseIcon className="w-5 h-5 text-gray-500" />
-          Besoins spécifiques
-        </h3>
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Précisez vos besoins particuliers
+            Aménagements spéciaux
           </label>
-          <textarea
-            value={data.specialNeeds?.join("\n")}
-            onChange={(e) =>
-              onChange(
-                "specialNeeds",
-                e.target.value.split("\n").filter(Boolean)
-              )
-            }
-            rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            placeholder="Un besoin par ligne..."
+          <input
+            type="text"
+            value={newArrangement}
+            onChange={(e) => setNewArrangement(e.target.value)}
+            onKeyDown={handleAddArrangement}
+            placeholder="Appuyez sur Entrée pour ajouter"
+            className="mt-1 block w-full rounded-md border border-gray-200 p-2 focus:ring-blue-500 focus:border-blue-500"
           />
+          <div className="flex flex-wrap gap-2 mt-2">
+            {(data.adaptation?.specialArrangements || []).map(
+              (arrangement: string, index: number) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                >
+                  {arrangement}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveArrangement(index)}
+                    className="p-1 hover:bg-blue-200 rounded-full"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </span>
+              )
+            )}
+          </div>
         </div>
       </div>
     </div>

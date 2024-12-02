@@ -1,4 +1,3 @@
-// src/pages/dashboard/RecruiterDashboard.tsx
 import React from "react";
 import {
   UsersIcon,

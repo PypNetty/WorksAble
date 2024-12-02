@@ -1,5 +1,3 @@
-// src/pages/onboarding/UserOnboarding.tsx
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -79,8 +77,8 @@ const initialFormData: RQTHProfileData = {
   schedule: {
     workHours: {
       preferred: {
-        start: "",
-        end: "",
+        start: "09:00",
+        end: "17:00",
       },
       maxPerDay: 8,
       flexibilityNeeds: [],
@@ -180,8 +178,6 @@ const UserOnboarding: React.FC = () => {
 
     try {
       setLoading(true);
-      // TODO: Implémenter la sauvegarde API
-      // await saveProfile(formData);
       setSuccess("Profil créé avec succès !");
       setTimeout(() => {
         navigate("/dashboard");
@@ -199,27 +195,18 @@ const UserOnboarding: React.FC = () => {
     field: string,
     value: any
   ) => {
-    if (field.includes(".")) {
-      const [parent, child] = field.split(".");
-      setFormData((prev) => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [parent]: {
-            ...(prev[section] as any)[parent],
-            [child]: value,
-          },
-        },
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [field]: value,
-        },
-      }));
-    }
+    setFormData((prev) => {
+      const newData = { ...prev };
+      const fieldParts = field.split(".");
+      let current = newData[section] as any;
+
+      for (let i = 0; i < fieldParts.length - 1; i++) {
+        current = current[fieldParts[i]] = { ...current[fieldParts[i]] };
+      }
+      current[fieldParts[fieldParts.length - 1]] = value;
+
+      return newData;
+    });
   };
 
   const getCurrentComponent = () => {
@@ -261,7 +248,6 @@ const UserOnboarding: React.FC = () => {
             Complétez votre profil
           </h1>
 
-          {/* Indicateur d'étapes */}
           <div className="flex justify-between mb-8">
             {STEPS.map(({ id, label, icon: Icon }) => (
               <button
@@ -289,7 +275,6 @@ const UserOnboarding: React.FC = () => {
             ))}
           </div>
 
-          {/* Formulaire */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {getCurrentComponent()}
 

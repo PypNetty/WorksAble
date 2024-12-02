@@ -5,7 +5,16 @@ import {
   CodeBracketIcon as CodeIcon,
   PlusIcon,
   TrashIcon,
+  DocumentCheckIcon,
 } from "@heroicons/react/24/outline";
+
+interface Certification {
+  id: string;
+  name: string;
+  issuer: string;
+  date: string;
+  expiryDate?: string;
+}
 
 interface ProfessionalProfileData {
   skills: Array<{
@@ -26,6 +35,7 @@ interface ProfessionalProfileData {
     school: string;
     year: string;
   };
+  certifications: Certification[];
 }
 
 const defaultData: ProfessionalProfileData = {
@@ -38,6 +48,7 @@ const defaultData: ProfessionalProfileData = {
     school: "",
     year: "",
   },
+  certifications: [],
 };
 
 const SKILL_LEVELS = [
@@ -64,6 +75,15 @@ const ProfessionalProfileStep: React.FC<ProfessionalProfileStepProps> = ({
   }>({
     name: "",
     level: "débutant",
+  });
+
+  const [newCertification, setNewCertification] = useState<
+    Omit<Certification, "id">
+  >({
+    name: "",
+    issuer: "",
+    date: "",
+    expiryDate: "",
   });
 
   const handleAddSkill = () => {
@@ -116,78 +136,107 @@ const ProfessionalProfileStep: React.FC<ProfessionalProfileStepProps> = ({
     onChange("experience.roles", newRoles);
   };
 
+  const handleAddCertification = () => {
+    if (
+      newCertification.name &&
+      newCertification.issuer &&
+      newCertification.date
+    ) {
+      const certification = {
+        id: Date.now().toString(),
+        ...newCertification,
+      };
+      onChange("certifications", [
+        ...(data.certifications || []),
+        certification,
+      ]);
+      setNewCertification({ name: "", issuer: "", date: "", expiryDate: "" });
+    }
+  };
+
+  const handleRemoveCertification = (certId: string) => {
+    onChange(
+      "certifications",
+      data.certifications.filter((cert) => cert.id !== certId)
+    );
+  };
+
+  const inputStyles =
+    "block w-full p-2 rounded-md border border-gray-200 focus:ring-blue-500 focus:border-blue-500";
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-white p-6 rounded-lg">
       <div className="flex items-center gap-4">
-        <AcademicCapIcon className="w-8 h-8 text-primary-600" />
+        <AcademicCapIcon className="w-8 h-8 text-blue-600" />
         <h2 className="text-2xl font-bold">Profil professionnel</h2>
       </div>
 
-      {/* Compétences */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <CodeIcon className="w-5 h-5 text-gray-500" />
           Compétences techniques
         </h3>
 
-        <div className="grid gap-4">
+        <div className="flex gap-2 items-center mb-4">
+          <div className="relative grow">
+            <input
+              type="text"
+              value={newSkill.name}
+              onChange={(e) =>
+                setNewSkill({ ...newSkill, name: e.target.value })
+              }
+              className={`${inputStyles} w-full h-12 pl-10`}
+              placeholder="Nouvelle compétence..."
+            />
+            <CodeIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+          </div>
+          <div className="min-w-[200px]">
+            <select
+              value={newSkill.level}
+              onChange={(e) =>
+                setNewSkill({ ...newSkill, level: e.target.value as any })
+              }
+              className={`${inputStyles} h-12 w-full bg-gray-50`}
+            >
+              {SKILL_LEVELS.map((level) => (
+                <option key={level.value} value={level.value}>
+                  {level.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddSkill}
+            className="p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 h-12 w-12 flex items-center justify-center"
+          >
+            <PlusIcon className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="grid gap-2">
           {data.skills?.map((skill) => (
             <div
               key={skill.id}
               className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
             >
-              <div>
+              <div className="flex items-center gap-2">
+                <CodeIcon className="w-5 h-5 text-gray-400" />
                 <span className="font-medium">{skill.name}</span>
-                <span className="ml-2 text-sm text-gray-500">
-                  {skill.level}
-                </span>
+                <span className="text-sm text-gray-500">- {skill.level}</span>
               </div>
               <button
                 type="button"
                 onClick={() => handleRemoveSkill(skill.id)}
-                className="text-red-600 hover:text-red-700"
+                className="text-red-500 hover:text-red-700"
               >
-                <TrashIcon className="w-4 h-4" />
+                <TrashIcon className="w-5 h-5" />
               </button>
             </div>
           ))}
         </div>
-
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newSkill.name}
-            onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
-            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            placeholder="Nouvelle compétence..."
-          />
-          <select
-            value={newSkill.level}
-            onChange={(e) =>
-              setNewSkill({ ...newSkill, level: e.target.value as any })
-            }
-            className="rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-          >
-            {SKILL_LEVELS.map((level) => (
-              <option key={level.value} value={level.value}>
-                {level.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={handleAddSkill}
-            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
-          >
-            <PlusIcon className="w-5 h-5" />
-          </button>
-        </div>
-        {errors.skills && (
-          <p className="text-sm text-red-600">{errors.skills}</p>
-        )}
       </div>
 
-      {/* Expériences */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <BriefcaseIcon className="w-5 h-5 text-gray-500" />
@@ -204,7 +253,7 @@ const ProfessionalProfileStep: React.FC<ProfessionalProfileStepProps> = ({
                   onChange={(e) =>
                     handleExperienceChange(index, "company", e.target.value)
                   }
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  className={inputStyles}
                   placeholder="Entreprise"
                 />
                 <input
@@ -213,7 +262,7 @@ const ProfessionalProfileStep: React.FC<ProfessionalProfileStepProps> = ({
                   onChange={(e) =>
                     handleExperienceChange(index, "role", e.target.value)
                   }
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  className={inputStyles}
                   placeholder="Poste"
                 />
                 <input
@@ -222,7 +271,7 @@ const ProfessionalProfileStep: React.FC<ProfessionalProfileStepProps> = ({
                   onChange={(e) =>
                     handleExperienceChange(index, "duration", e.target.value)
                   }
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  className={inputStyles}
                   placeholder="Durée (ex: 2 ans)"
                 />
                 <textarea
@@ -230,7 +279,7 @@ const ProfessionalProfileStep: React.FC<ProfessionalProfileStepProps> = ({
                   onChange={(e) =>
                     handleExperienceChange(index, "description", e.target.value)
                   }
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  className={inputStyles}
                   rows={3}
                   placeholder="Description du poste..."
                 />
@@ -238,9 +287,9 @@ const ProfessionalProfileStep: React.FC<ProfessionalProfileStepProps> = ({
               <button
                 type="button"
                 onClick={() => handleRemoveExperience(index)}
-                className="text-red-600 hover:text-red-700 ml-4"
+                className="text-red-500 hover:text-red-700 ml-4"
               >
-                <TrashIcon className="w-4 h-4" />
+                <TrashIcon className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -249,14 +298,13 @@ const ProfessionalProfileStep: React.FC<ProfessionalProfileStepProps> = ({
         <button
           type="button"
           onClick={handleAddExperience}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           <PlusIcon className="w-4 h-4" />
           Ajouter une expérience
         </button>
       </div>
 
-      {/* Formation */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium flex items-center gap-2">
           <AcademicCapIcon className="w-5 h-5 text-gray-500" />
@@ -267,27 +315,110 @@ const ProfessionalProfileStep: React.FC<ProfessionalProfileStepProps> = ({
             type="text"
             value={data.education.degree}
             onChange={(e) => onChange("education.degree", e.target.value)}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            className={inputStyles}
             placeholder="Diplôme"
           />
           <input
             type="text"
             value={data.education.school}
             onChange={(e) => onChange("education.school", e.target.value)}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            className={inputStyles}
             placeholder="École/Université"
           />
           <input
             type="text"
             value={data.education.year}
             onChange={(e) => onChange("education.year", e.target.value)}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            className={inputStyles}
             placeholder="Année"
           />
         </div>
       </div>
 
-      {/* Messages d'erreur */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium flex items-center gap-2">
+          <DocumentCheckIcon className="w-5 h-5 text-gray-500" />
+          Certifications
+        </h3>
+
+        <div className="grid gap-4">
+          {data.certifications?.map((cert) => (
+            <div
+              key={cert.id}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+            >
+              <div className="space-y-1">
+                <div className="font-medium">{cert.name}</div>
+                <div className="text-sm text-gray-500">
+                  {cert.issuer} - Obtenue le {cert.date}
+                  {cert.expiryDate && ` - Expire le ${cert.expiryDate}`}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemoveCertification(cert.id)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <TrashIcon className="w-5 h-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <input
+            type="text"
+            value={newCertification.name}
+            onChange={(e) =>
+              setNewCertification((prev) => ({ ...prev, name: e.target.value }))
+            }
+            className={inputStyles}
+            placeholder="Nom de la certification"
+          />
+          <input
+            type="text"
+            value={newCertification.issuer}
+            onChange={(e) =>
+              setNewCertification((prev) => ({
+                ...prev,
+                issuer: e.target.value,
+              }))
+            }
+            className={inputStyles}
+            placeholder="Organisme certificateur"
+          />
+          <input
+            type="date"
+            value={newCertification.date}
+            onChange={(e) =>
+              setNewCertification((prev) => ({ ...prev, date: e.target.value }))
+            }
+            className={inputStyles}
+          />
+          <input
+            type="date"
+            value={newCertification.expiryDate}
+            onChange={(e) =>
+              setNewCertification((prev) => ({
+                ...prev,
+                expiryDate: e.target.value,
+              }))
+            }
+            className={inputStyles}
+            placeholder="Date d'expiration (optionnel)"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAddCertification}
+          className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          <PlusIcon className="w-4 h-4" />
+          Ajouter une certification
+        </button>
+      </div>
+
       {Object.keys(errors).length > 0 && (
         <div className="mt-4 text-sm text-red-600">
           {Object.values(errors).map((error, index) => (
